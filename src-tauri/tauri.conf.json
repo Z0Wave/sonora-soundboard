@@ -1,0 +1,50 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "sonora",
+  "version": "0.1.0",
+  "identifier": "com.yuriribeiro.sonora",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "sonora",
+        "width": 1000,
+        "height": 700,
+        "label": "main",
+        "visible": false,
+        "decorations": false,
+        "resizable": false,
+        "fullscreen": false,
+        "transparent": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "createUpdaterArtifacts": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://gist.githubusercontent.com/Z0Wave/6d252ea6289347c9ddda163c102743b3/raw/sonora-update.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDYyREQxM0M5QTBCMjQxRjcKUldUM1FiS2d5UlBkWWliME5XOFVJUUMrOGh3SGhTVW1BVlFWWTJtUWttU1l0VWtESHliNndrRTEK"
+    }
+  }
+}

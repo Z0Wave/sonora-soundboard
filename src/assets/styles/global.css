@@ -1,0 +1,14 @@
+
+@import "tailwindcss";
+
+/* Desativa a seleção de texto no aplicativo inteiro */
+body {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Libera a seleção APENAS para os campos de digitação (Inputs e Text areas) */
+input, textarea {
+  user-select: auto;
+  -webkit-user-select: auto;
+}
