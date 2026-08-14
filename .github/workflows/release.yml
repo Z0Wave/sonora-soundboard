@@ -1,0 +1,40 @@
+name: Release Sonora
+
+on:
+  push:
+    tags:
+      - 'v*' # O robô só vai acordar quando criar uma tag que comece com "v"
+
+jobs:
+  build-and-release:
+    permissions:
+      contents: write
+    runs-on: windows-latest # Usa um PC Windows na nuvem
+
+    steps:
+      - name: Baixando o Código
+        uses: actions/checkout@v4
+
+      - name: Instalando o Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Instalando o Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Instalando Dependências do Frontend
+        run: npm install
+
+      - name: Compilando e Publicando (Tauri Action)
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'Sonora ${{ github.ref_name }}'
+          releaseBody: 'Veja as novidades desta versão no próprio aplicativo!'
+          releaseDraft: false
+          prerelease: false

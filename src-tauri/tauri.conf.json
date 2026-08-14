@@ -42,7 +42,7 @@
   "plugins": {
     "updater": {
       "endpoints": [
-        "https://gist.githubusercontent.com/Z0Wave/6d252ea6289347c9ddda163c102743b3/raw/sonora-update.json"
+        "https://github.com/Z0Wave/sonora-soundboard/releases/latest/download/latest.json"
       ],
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDYyREQxM0M5QTBCMjQxRjcKUldUM1FiS2d5UlBkWWliME5XOFVJUUMrOGh3SGhTVW1BVlFWWTJtUWttU1l0VWtESHliNndrRTEK"
     }
