@@ -1,8 +1,6 @@
-
 import { useState, useEffect } from "react";
 import { check } from "@tauri-apps/plugin-updater";
 import type { Update } from "@tauri-apps/plugin-updater";
-
 
 export function useUpdater() {
   const [updateInfo, setUpdateInfo] = useState<Update | null>(null);
@@ -58,7 +56,11 @@ export function useUpdater() {
         }
       });
 
-      // Agora o download terminará silenciosamente e o seu modal finalmente vai aparecer!
+      // Executa a instalação no sistema antes de pedir para reiniciar
+      setUpdateProgress("Instalando...");
+      await updateInfo.install();
+
+      // Finaliza e chama o modal pedindo para reiniciar (relaunch)
       setIsDownloadingUpdate(false);
       setIsRestartModalOpen(true); 
 

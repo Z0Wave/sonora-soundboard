@@ -1,7 +1,8 @@
 
 import { useEffect, useRef } from "react";
-import { register, unregisterAll } from "@tauri-apps/plugin-global-shortcut";
+import { register, unregister, isRegistered } from '@tauri-apps/plugin-global-shortcut';
 import { Outlet } from "react-router-dom";
+
 
 
 import { Sidebar } from "@/components/Sidebar"; 
@@ -74,15 +75,29 @@ export default function MainLayout() {
   }, [recordingHotkeyFor, isRecordingStopHotkey]);
 
   useEffect(() => {
-    const updateGlobalShortcuts = async () => {
+    // Array para guardar tudo que registramos nesta montagem, para limparmos na saída
+    const registeredShortcuts: string[] = [];
+
+    const setupShortcuts = async () => {
       try {
-        await unregisterAll();
-        const activeLibrary = library.filter(s => s.profileId === activeProfile.id);
+        const activeLibrary = library.filter(s => s.profileId === activeProfile?.id);
         
+        // Função auxiliar robusta para registrar com segurança
+        const safeRegister = async (hotkey: string, callback: (event: any) => void) => {
+          if (!hotkey) return;
+          const isReg = await isRegistered(hotkey);
+          if (isReg) {
+            await unregister(hotkey); // Força a liberação antes de pegar
+          }
+          await register(hotkey, callback);
+          registeredShortcuts.push(hotkey);
+        };
+
+        // 1. Registra os atalhos dos sons
         for (const sound of activeLibrary) {
           const currentHotkey = sound.hotkey_code || sound.hotkey;
           if (currentHotkey) {
-            await register(currentHotkey, (event) => {
+            await safeRegister(currentHotkey, (event) => {
               if (event && (event as any).state === "Released") return;
               const now = Date.now();
               if (now - (cooldownsRef.current[sound.id] || 0) >= 2000) {
@@ -92,16 +107,33 @@ export default function MainLayout() {
             });
           }
         }
+
+        // 2. Registra o botão de pânico
         if (stopHotkey) {
-            await register(stopHotkey, (event) => {
-                if (event && (event as any).state === "Released") return;
-                stopAllSounds().catch(console.error);
-            });
+          await safeRegister(stopHotkey, (event) => {
+            if (event && (event as any).state === "Released") return;
+            stopAllSounds().catch(console.error);
+          });
         }
-      } catch (error) { console.error("Erro ao registrar atalhos:", error); }
+      } catch (error) {
+        console.error("Falha ao configurar atalhos globais:", error);
+      }
     };
-    updateGlobalShortcuts();
-    return () => { unregisterAll().catch(console.error); };
+
+    setupShortcuts();
+
+    // CLEANUP: Quando o useEffect rodar novamente ou a tela morrer, devolva as teclas ao Windows
+    return () => {
+      registeredShortcuts.forEach(async (hotkey) => {
+        try {
+          if (await isRegistered(hotkey)) {
+            await unregister(hotkey);
+          }
+        } catch (e) {
+          console.error(`Falha ao desregistrar ${hotkey}:`, e);
+        }
+      });
+    };
   }, [library, activeProfile, stopHotkey]);
 
   return (

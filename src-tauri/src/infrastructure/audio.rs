@@ -1,3 +1,4 @@
+
 use crate::models::AudioDeviceInfo;
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::SampleFormat;
@@ -59,13 +60,7 @@ pub fn mix_buffer(active_voices: &mut Vec<Voice>, output_buffer: &mut [f32], mas
             mixed += voice.get_next_sample();
         }
         mixed *= master_volume;
-        let limited = if mixed > 1.0 {
-            1.0
-        } else if mixed < -1.0 {
-            -1.0
-        } else {
-            mixed - (mixed * mixed * mixed) / 6.0
-        };
+        let limited = mixed.tanh(); // Tanh faz a curva suavemente sem distorcer o meio
         *out_sample = limited;
     }
     active_voices.retain(|v| v.is_playing);
@@ -87,14 +82,17 @@ pub fn create_audio_queue() -> (Sender<AudioCommand>, Receiver<AudioCommand>) {
     crossbeam::channel::bounded(256)
 }
 
-pub fn start_audio_engine(receiver: Receiver<AudioCommand>) -> cpal::Stream {
+pub fn start_audio_engine(receiver: Receiver<AudioCommand>) -> Result<cpal::Stream, String> {
     let host = cpal::default_host();
+    
     let device = host
         .default_output_device()
-        .expect("Nenhum dispositivo de saída de áudio encontrado");
+        .ok_or_else(|| "Nenhum dispositivo de saída de áudio encontrado. Conecte um fone ou caixa de som.".to_string())?;
+        
     let config = device
         .default_output_config()
-        .expect("Falha ao obter configuração de áudio");
+        .map_err(|e| format!("Falha ao obter configuração de áudio: {}", e))?;
+        
     let mut active_voices: Vec<Voice> = Vec::with_capacity(128);
     let mut master_volume = 1.0;
     let err_fn = |err| eprintln!("Erro na thread de áudio: {}", err);
@@ -108,12 +106,8 @@ pub fn start_audio_engine(receiver: Receiver<AudioCommand>) -> cpal::Stream {
                     match cmd {
                         AudioCommand::Play { id, sample, volume } => {
                             active_voices.push(Voice {
-                                id,
-                                sample_data: sample,
-                                position: 0,
-                                volume,
-                                is_playing: true,
-                                loop_playback: false,
+                                id, sample_data: sample, position: 0, volume,
+                                is_playing: true, loop_playback: false,
                             });
                         }
                         AudioCommand::StopAll => active_voices.clear(),
@@ -125,20 +119,18 @@ pub fn start_audio_engine(receiver: Receiver<AudioCommand>) -> cpal::Stream {
                         AudioCommand::SetMasterVolume(vol) => master_volume = vol,
                     }
                 }
-                for sample in data.iter_mut() {
-                    *sample = 0.0;
-                }
+                for sample in data.iter_mut() { *sample = 0.0; }
                 mix_buffer(&mut active_voices, data, master_volume);
             },
             err_fn,
             None,
         ),
-        _ => panic!("Formato de áudio não suportado pelo hardware. O sistema exige f32."),
-    }
-    .unwrap();
+        _ => return Err("Formato de áudio não suportado pelo hardware. O sistema exige f32.".to_string()),
+    }.map_err(|e| format!("Falha ao construir stream de áudio: {}", e))?;
 
-    stream.play().unwrap();
-    stream
+    stream.play().map_err(|e| format!("Falha ao iniciar o fluxo de áudio: {}", e))?;
+    
+    Ok(stream)
 }
 
 pub struct SampleCache {
@@ -150,12 +142,18 @@ pub struct SampleCache {
 impl SampleCache {
     pub fn new() -> Self {
         let host = cpal::default_host();
-        let device = host.default_output_device().expect("Sem áudio");
-        let config = device.default_output_config().expect("Sem config");
+        
+        // Tenta pegar as configurações reais. Se o cara estiver sem placa de som, 
+        // nós assumimos um fallback seguro (44100Hz, 2 canais).
+        let (target_rate, target_channels) = match host.default_output_device().and_then(|d| d.default_output_config().ok()) {
+            Some(config) => (config.sample_rate().0, config.channels()),
+            None => (44100, 2), 
+        };
+
         Self {
             samples: DashMap::new(),
-            target_rate: config.sample_rate().0,
-            target_channels: config.channels(),
+            target_rate,
+            target_channels,
         }
     }
 

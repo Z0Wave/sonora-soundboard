@@ -18,14 +18,38 @@ use tauri::{
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+
+    // Sentry initialization
+    let mut sentry_options = sentry::ClientOptions::default();
+    sentry_options.release = sentry::release_name!();
+    sentry_options.send_default_pii = true;
+
+    // Puxa a chave do ambiente de compilação. Se não existir, fica vazio.
+    let dsn = std::option_env!("SENTRY_DSN").unwrap_or("");
+    
+    let _guard = if dsn.is_empty() {
+        println!("Sentry desativado (Nenhum DSN encontrado)");
+        None
+    } else {
+        Some(sentry::init((dsn, sentry_options)))
+    };
+
     let (tx, rx) = create_audio_queue();
     let (sec_tx, sec_rx) = create_audio_queue();
     let (device_tx, device_rx) = mpsc::channel::<String>();
 
     std::thread::spawn(move || {
-        let _stream = start_audio_engine(rx);
-        loop {
-            std::thread::park();
+
+        // Agora tratamos o erro de forma isolada. Se falhar, não mata o app inteiro.
+        match start_audio_engine(rx) {
+            Ok(_stream) => {
+                loop {
+                    std::thread::park(); // Mantém a stream viva
+                }
+            }
+            Err(e) => {
+                eprintln!("FALHA CRÍTICA NO MOTOR DE ÁUDIO PRINCIPAL: {}", e);
+            }
         }
     });
 

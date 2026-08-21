@@ -34,7 +34,7 @@ pub fn set_master_volume(state: State<'_, AudioState>, volume: f32) -> Result<()
 pub fn get_settings_db(
     db: State<'_, Mutex<Connection>>,
 ) -> Result<HashMap<String, String>, String> {
-    let conn = db.lock().unwrap();
+    let conn = db.lock().map_err(|e| format!("Falha de concorrência: Banco de dados bloqueado ({})", e))?;
     repository::get_all_settings(&conn)
 }
 
@@ -44,6 +44,6 @@ pub fn save_setting_db(
     key: String,
     value: String,
 ) -> Result<(), String> {
-    let conn = db.lock().unwrap();
+    let conn = db.lock().map_err(|e| format!("Falha de concorrência: Banco de dados bloqueado ({})", e))?;
     repository::upsert_setting(&conn, &key, &value)
 }

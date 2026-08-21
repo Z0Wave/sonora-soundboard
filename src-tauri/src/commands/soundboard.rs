@@ -28,7 +28,7 @@ pub fn play_sound(
     if state.cache.samples.get(&id).is_none() {
         println!("Lazy Load: Som não encontrado na RAM. Buscando do disco...");
         let filepath = {
-            let conn = db_state.lock().unwrap();
+            let conn = db_state.lock().map_err(|e| format!("Falha de concorrência: Banco de dados bloqueado ({})", e))?;
             repository::get_sound_filepath(&conn, &sound_id)?
         };
         state
@@ -68,7 +68,7 @@ pub fn stop_sound(state: State<'_, AudioState>, sound_id: String) -> Result<(), 
 
 #[tauri::command]
 pub fn get_profiles(db: State<'_, Mutex<Connection>>) -> Result<Vec<ProfileItem>, String> {
-    let conn = db.lock().unwrap();
+    let conn = db.lock().map_err(|e| format!("Falha de concorrência: Banco de dados bloqueado ({})", e))?;
     repository::fetch_all_profiles(&conn)
 }
 
@@ -78,13 +78,13 @@ pub fn save_profile_to_db(
     id: String,
     name: String,
 ) -> Result<(), String> {
-    let conn = db.lock().unwrap();
+    let conn = db.lock().map_err(|e| format!("Falha de concorrência: Banco de dados bloqueado ({})", e))?;
     repository::upsert_profile(&conn, &id, &name)
 }
 
 #[tauri::command]
 pub fn delete_profile_from_db(db: State<'_, Mutex<Connection>>, id: String) -> Result<(), String> {
-    let conn = db.lock().unwrap();
+    let conn = db.lock().map_err(|e| format!("Falha de concorrência: Banco de dados bloqueado ({})", e))?;
     repository::delete_profile(&conn, &id)
 }
 
@@ -96,19 +96,19 @@ pub fn save_sound_to_db(
     filepath: String,
     profile_id: String,
 ) -> Result<(), String> {
-    let conn = db.lock().unwrap();
+    let conn = db.lock().map_err(|e| format!("Falha de concorrência: Banco de dados bloqueado ({})", e))?;
     repository::insert_sound(&conn, &id, &name, &filepath, &profile_id)
 }
 
 #[tauri::command]
 pub fn delete_sound_from_db(db: State<'_, Mutex<Connection>>, id: String) -> Result<(), String> {
-    let conn = db.lock().unwrap();
+    let conn = db.lock().map_err(|e| format!("Falha de concorrência: Banco de dados bloqueado ({})", e))?;
     repository::delete_sound(&conn, &id)
 }
 
 #[tauri::command]
 pub fn get_library(db: State<'_, Mutex<Connection>>) -> Result<Vec<SoundItem>, String> {
-    let conn = db.lock().unwrap();
+    let conn = db.lock().map_err(|e| format!("Falha de concorrência: Banco de dados bloqueado ({})", e))?;
     repository::fetch_all_sounds(&conn)
 }
 
@@ -118,7 +118,7 @@ pub fn set_sound_hotkey(
     id: String,
     hotkey: Option<String>,
 ) -> Result<(), String> {
-    let conn = db.lock().unwrap();
+    let conn = db.lock().map_err(|e| format!("Falha de concorrência: Banco de dados bloqueado ({})", e))?;
     repository::update_hotkey(&conn, &id, hotkey.as_deref())
 }
 

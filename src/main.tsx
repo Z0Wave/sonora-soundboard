@@ -10,20 +10,20 @@ import "./assets/styles/global.css";
 document.addEventListener("contextmenu", (e) => e.preventDefault());
 
 // 2. Bloqueia atalhos de teclado de navegadores web
-document.addEventListener("keydown", (e) => {
-  // Bloqueia F12 (Inspecionar Elemento)
-  if (e.key === "F12") e.preventDefault();
+// document.addEventListener("keydown", (e) => {
+//   // Bloqueia F12 (Inspecionar Elemento)
+//   if (e.key === "F12") e.preventDefault();
   
-  // Bloqueia F5 e Ctrl + R (Recarregar a página e perder os estados)
-  if (e.key === "F5" || (e.ctrlKey && e.key.toLowerCase() === "r")) {
-    e.preventDefault();
-  }
+//   // Bloqueia F5 e Ctrl + R (Recarregar a página e perder os estados)
+//   if (e.key === "F5" || (e.ctrlKey && e.key.toLowerCase() === "r")) {
+//     e.preventDefault();
+//   }
   
-  // Bloqueia Ctrl + Shift + I e Ctrl + Shift + J (DevTools)
-  if (e.ctrlKey && e.shiftKey && (e.key.toLowerCase() === "i" || e.key.toLowerCase() === "j")) {
-    e.preventDefault();
-  }
-});
+//   // Bloqueia Ctrl + Shift + I e Ctrl + Shift + J (DevTools)
+//   if (e.ctrlKey && e.shiftKey && (e.key.toLowerCase() === "i" || e.key.toLowerCase() === "j")) {
+//     e.preventDefault();
+//   }
+// });
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
