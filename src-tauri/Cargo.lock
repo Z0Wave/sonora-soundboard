@@ -4521,7 +4521,7 @@ dependencies = [
 
 [[package]]
 name = "sonora"
-version = "0.1.1-beta"
+version = "0.1.1"
 dependencies = [
  "cpal",
  "crossbeam",
